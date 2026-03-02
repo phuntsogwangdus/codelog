@@ -57,6 +57,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
+
+
+// Handle update (AJAX)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update') {
+    $id = intval($_POST['id'] ?? 0);
+
+    $name    = trim(base64_decode($_POST['name'] ?? ''));
+    $subject = trim(base64_decode($_POST['subject'] ?? ''));
+    $message = trim(base64_decode($_POST['message'] ?? ''));
+
+    if ($id && $name && $subject && $message) {
+        try {
+            $stmt = $pdo->prepare("UPDATE messages SET name=?, subject=?, message=? WHERE id=?");
+            $stmt->execute([$name, $subject, $message, $id]);
+            echo json_encode(['status' => 'success']);
+        } catch (PDOException $e) {
+            echo json_encode(['status' => 'error']);
+        }
+    } else {
+        echo json_encode(['status' => 'error']);
+    }
+    exit;
+}
+
 // Handle search
 $search = $_GET['search'] ?? '';
 $write_mode = isset($_GET['write']) ? true : false;
@@ -117,7 +141,7 @@ function renderMessage($text) {
         $escaped = '<pre><code>' . $escaped . '</code></pre>';
     } else {
         // Plain text — preserve line breaks
-        $escaped = nl2br($escaped);
+        $escaped = '<div style="white-space: pre-line; line-height: 1.4;">' . $escaped . '</div>';
     }
 
     return $escaped;
@@ -620,6 +644,15 @@ code:not(pre code) {
     font-size: 13px;
     color: #d63384;
 }	
+
+.dlog_edit button{
+	transition:transform 0.3s ease-in-out;
+}
+
+.dlog_edit button:hover{
+    transform: scale(1.1);
+}
+
     </style>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
@@ -748,11 +781,50 @@ code:not(pre code) {
                                                 <div class="modal-date">
                                                     🕐 <?= date('M d, Y - g:i A', strtotime($msg['created_at'])) ?>
                                                 </div>
+												
                                             </div>
+											<button 
+												type="button"
+												onclick="event.stopPropagation(); enableEdit(<?= $msg['id'] ?>);"
+												style="float:right;padding:8px 14px;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer;">
+												✏️ Edit
+											</button>
                                             <div class="modal-subject">
                                                 📌 <?= htmlspecialchars($msg['subject']) ?>
                                             </div>
-                                            <div class="modal-text"><?= renderMessage($msg['message']) ?></div>
+                                            
+											
+											
+											<div id="view-area-<?= $msg['id'] ?>">
+											
+											<div class="modal-text"><?= renderMessage($msg['message']) ?></div>
+
+											
+											</div>
+
+						<div id="edit-area-<?= $msg['id'] ?>" class="dlog_edit" style="display:none;margin-top:15px;">
+							<input type="text" id="edit-name-<?= $msg['id'] ?>" 
+								value="<?= htmlspecialchars($msg['name']) ?>" 
+								style="width:100%;margin-bottom:10px;padding:8px;border:1px solid #ccc;border-radius:4px;">
+
+							<input type="text" id="edit-subject-<?= $msg['id'] ?>" 
+								value="<?= htmlspecialchars($msg['subject']) ?>" 
+								style="width:100%;margin-bottom:10px;padding:8px;border:1px solid #ccc;border-radius:4px;">
+
+							<textarea id="edit-message-<?= $msg['id'] ?>" 
+								style="width:100%;height:150px;margin-bottom:10px;padding:8px;border:1px solid #ccc;border-radius:4px;"><?= htmlspecialchars($msg['message']) ?></textarea>
+
+							<button onclick="saveEdit(<?= $msg['id'] ?>)" 
+								style="padding:8px 14px;background:#28a745;color:#fff;border:none;border-radius:4px;cursor:pointer;">
+								💾 Save
+							</button>
+
+							<button onclick="cancelEdit(<?= $msg['id'] ?>)" 
+								style="padding:8px 14px;background:#dc3545;color:#fff;border:none;border-radius:4px;cursor:pointer;margin-left:8px;">
+								❌ Cancel
+							</button>
+						</div>
+											
                                         </div>
                                     </div>
                                 </div>
@@ -836,12 +908,16 @@ function openModal(id) {
         }
         
         // Close modal when clicking outside
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                event.target.style.display = 'none';
-                document.body.style.overflow = 'auto';
-            }
+/*  */
+/*     const modals = document.querySelectorAll('.modal');
+
+    modals.forEach(modal => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
         }
+    });
+}); */
         
         // Close modal with Escape key
         document.addEventListener('keydown', function(event) {
@@ -886,6 +962,53 @@ document.querySelector('form[method="POST"]').addEventListener('submit', functio
             hljs.highlightElement(el);
         });
     });
+	
+	
+	
+	
+	
+	
+	// UPDATE Code
+	
+	function enableEdit(id) {
+    document.getElementById('view-area-' + id).style.display = 'none';
+    document.getElementById('edit-area-' + id).style.display = 'block';
+}
+
+function cancelEdit(id) {
+    document.getElementById('edit-area-' + id).style.display = 'none';
+    document.getElementById('view-area-' + id).style.display = 'block';
+}
+
+function saveEdit(id) {
+    const name = document.getElementById('edit-name-' + id).value;
+    const subject = document.getElementById('edit-subject-' + id).value;
+    const message = document.getElementById('edit-message-' + id).value;
+
+    const formData = new FormData();
+    formData.append('action', 'update');
+    formData.append('id', id);
+    formData.append('name', btoa(unescape(encodeURIComponent(name))));
+    formData.append('subject', btoa(unescape(encodeURIComponent(subject))));
+    formData.append('message', btoa(unescape(encodeURIComponent(message))));
+
+    fetch('', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('Update failed.');
+        }
+    });
+}
+	
+	
+	
+	
 </script>
 </body>
 </html>
