@@ -1,5 +1,5 @@
 <?php
-
+//PWA
 // Created by Phuntsog Wangdus
 // https://wangdus.com/
 
@@ -172,6 +172,9 @@ function renderMessage($text)
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Message Logger</title>
+	
+	<link rel="manifest" href="manifest.json">
+	<meta name="theme-color" content="#121212">
     <style>
         * {
     margin: 0;
@@ -1078,4 +1081,27 @@ if (listItem) {
 
 
 </body>
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/blog/sw.js')
+        .then(() => console.log('SW Registered'));
+}
+
+
+
+
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+
+    console.log("Install available");
+
+    // Show your custom install button
+});
+</script>
+
+
+
 </html>
