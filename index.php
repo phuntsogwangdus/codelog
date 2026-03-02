@@ -1,5 +1,12 @@
 <?php
 
+// Created by Phuntsog Wangdus 
+// https://wangdus.com/
+
+
+// https://it-ladakh.com/
+// Infotech Solutions Ladakh
+
 date_default_timezone_set('Asia/Kolkata');
 // Initialize SQLite database
 try {
@@ -843,7 +850,7 @@ code:not(pre code) {
             </div>
         <?php endif; ?>
     </div>
-    
+    <center><code> Created by Phuntsog Wangdus 🙂</code></center>
     <script>
         // Select all functionality
         const selectAllCheckbox = document.getElementById('selectAll');
@@ -1010,5 +1017,7 @@ function saveEdit(id) {
 	
 	
 </script>
+
+
 </body>
 </html>
