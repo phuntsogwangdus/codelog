@@ -1,6 +1,6 @@
 <?php
 
-// Created by Phuntsog Wangdus 
+// Created by Phuntsog Wangdus
 // https://wangdus.com/
 
 
@@ -12,7 +12,7 @@ date_default_timezone_set('Asia/Kolkata');
 try {
     $pdo = new PDO('sqlite:database.db');
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
+
     // Create messages table if not exists
     $pdo->exec("CREATE TABLE IF NOT EXISTS messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,12 +25,41 @@ try {
     die("Database error: " . $e->getMessage());
 }
 
+
+
+// Handle update (AJAX)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'update') {
+    header('Content-Type: application/json');
+
+    $id = intval($_POST['id'] ?? 0);
+    $name    = trim(base64_decode($_POST['name'] ?? ''));
+    $subject = trim(base64_decode($_POST['subject'] ?? ''));
+    $message = trim(base64_decode($_POST['message'] ?? ''));
+
+    if ($id && $name && $subject && $message) {
+        $stmt = $pdo->prepare("UPDATE messages SET name=?, subject=?, message=? WHERE id=?");
+        $stmt->execute([$name, $subject, $message, $id]);
+
+        echo json_encode([
+            'status' => 'success',
+            'name' => htmlspecialchars($name, ENT_QUOTES, 'UTF-8'),
+            'subject' => htmlspecialchars($subject, ENT_QUOTES, 'UTF-8'),
+            'message' => renderMessage($message)
+        ]);
+    } else {
+        echo json_encode(['status' => 'error']);
+    }
+
+    exit; // 🔴 VERY IMPORTANT
+}
+
+
 // Handle form submission
 $success = '';
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add') {
     $now = date('Y-m-d H:i:s');
-    
+
     // Decode Base64 encoded fields
     $name    = trim(base64_decode($_POST['name'] ?? ''));
     $subject = trim(base64_decode($_POST['subject'] ?? ''));
@@ -66,27 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 
 
-// Handle update (AJAX)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update') {
-    $id = intval($_POST['id'] ?? 0);
 
-    $name    = trim(base64_decode($_POST['name'] ?? ''));
-    $subject = trim(base64_decode($_POST['subject'] ?? ''));
-    $message = trim(base64_decode($_POST['message'] ?? ''));
-
-    if ($id && $name && $subject && $message) {
-        try {
-            $stmt = $pdo->prepare("UPDATE messages SET name=?, subject=?, message=? WHERE id=?");
-            $stmt->execute([$name, $subject, $message, $id]);
-            echo json_encode(['status' => 'success']);
-        } catch (PDOException $e) {
-            echo json_encode(['status' => 'error']);
-        }
-    } else {
-        echo json_encode(['status' => 'error']);
-    }
-    exit;
-}
 
 // Handle search
 $search = $_GET['search'] ?? '';
@@ -109,13 +118,14 @@ try {
 
 
 
-function renderMessage($text) {
+function renderMessage($text)
+{
     $escaped = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
 
     // Handle explicit fenced blocks ```lang\ncode```
     $escaped = preg_replace_callback(
         '/```(\w+)?\n(.*?)```/s',
-        function($matches) {
+        function ($matches) {
             $lang = !empty($matches[1]) ? ' class="language-' . htmlspecialchars($matches[1]) . '"' : '';
             return '<pre><code' . $lang . '>' . $matches[2] . '</code></pre>';
         },
@@ -178,7 +188,7 @@ function renderMessage($text) {
 }
 
 body {
-    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-family: 'Montserrat';
     background: linear-gradient(135deg, #667eea, #764ba2);
     min-height: 100vh;
     padding: 24px;
@@ -194,11 +204,14 @@ body {
     text-align: center;
     color: white;
     margin-bottom: 15px;
+	font-family: 'Gentium Plus';
 }
 
 .header h1 {
     font-size: 2.3rem;
     margin-bottom: 6px;
+	text-align: left;
+	
 }
 
 .header p {
@@ -404,10 +417,7 @@ textarea {
     margin-bottom: 6px;
 }
 
-.message-name {
-    font-weight: 700;
-    color: #4f46e5;
-}
+
 
 .message-subject {
     font-weight: 600;
@@ -439,9 +449,11 @@ textarea {
         }
         
         .message-name {
-            font-weight: 700;
-            color: #667eea;
-            font-size: 1.1em;
+			color: #333;
+			font-family: Ruthie;
+			font-size: 23px;
+			border-bottom: 1px solid #a7a7a7;
+			padding-bottom: 3px;
         }
         
         .message-date {
@@ -454,11 +466,13 @@ textarea {
             color: #333;
             margin-bottom: -10px;
             font-size: 1.05em;
+			letter-spacing: 0.6px;
+			font-family: trirong;
         }
         
         .message-text {
 			margin:1em;
-            color: #555;
+            color: #49549a;
             line-height: 1.5;
             white-space: pre-wrap;
             overflow: hidden;
@@ -598,7 +612,7 @@ textarea {
         }
         
         .message-count {
-            text-align: center;
+            text-align: left;
             color: #555;
             margin-bottom: 20px;
             font-size: 1.1em;
@@ -664,6 +678,7 @@ code:not(pre code) {
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Gentium+Plus&family=Montserrat:wght@600&family=Oswald:wght@200;300;400&family=Roboto:ital,wght@0,100;0,300;0,400;1,100&family=Trirong&family=Ruthie&family=Alumni+Sans:wght@200;600&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
@@ -755,7 +770,7 @@ code:not(pre code) {
                         
                         <div class="message-list">
                             <?php foreach ($messages as $msg): ?>
-                                <div class="message-item" onclick="openModal(<?= intval($msg['id']) ?>)">
+                                <div id="message-item-<?= $msg['id']?>" class="message-item" onclick="openModal(<?= intval($msg['id']) ?>)">
                                     <input type="checkbox" 
                                            class="message-checkbox" 
                                            name="message_ids[]" 
@@ -820,7 +835,9 @@ code:not(pre code) {
 
 							<textarea id="edit-message-<?= $msg['id'] ?>" 
 								style="width:100%;height:150px;margin-bottom:10px;padding:8px;border:1px solid #ccc;border-radius:4px;"><?= htmlspecialchars($msg['message']) ?></textarea>
-
+<div id="update-msg-<?= $msg['id'] ?>" 
+     style="display:none;margin-bottom:10px;padding:8px;background:#d4edda;color:#155724;border-radius:4px;">
+</div>
 							<button onclick="saveEdit(<?= $msg['id'] ?>)" 
 								style="padding:8px 14px;background:#28a745;color:#fff;border:none;border-radius:4px;cursor:pointer;">
 								💾 Save
@@ -940,19 +957,22 @@ function openModal(id) {
         });
 
 
-document.querySelector('form[method="POST"]').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const fields = ['name', 'subject', 'message'];
-    fields.forEach(fieldName => {
-        const field = document.getElementById(fieldName);
-        if (field) {
-            field.value = btoa(unescape(encodeURIComponent(field.value)));
-        }
+const createForm = document.querySelector('form input[name="action"][value="add"]')?.closest('form');
+
+if (createForm) {
+    createForm.addEventListener('submit', function(e) {
+
+        const fields = ['name', 'subject', 'message'];
+
+        fields.forEach(fieldName => {
+            const field = document.getElementById(fieldName);
+            if (field) {
+                field.value = btoa(unescape(encodeURIComponent(field.value)));
+            }
+        });
+
     });
-    
-    this.submit();
-});
+}
     </script>
 
 
@@ -988,6 +1008,7 @@ function cancelEdit(id) {
 }
 
 function saveEdit(id) {
+
     const name = document.getElementById('edit-name-' + id).value;
     const subject = document.getElementById('edit-subject-' + id).value;
     const message = document.getElementById('edit-message-' + id).value;
@@ -999,14 +1020,51 @@ function saveEdit(id) {
     formData.append('subject', btoa(unescape(encodeURIComponent(subject))));
     formData.append('message', btoa(unescape(encodeURIComponent(message))));
 
-    fetch('', {
+    fetch(window.location.pathname, {
         method: 'POST',
         body: formData
     })
     .then(res => res.json())
     .then(data => {
+
         if (data.status === 'success') {
-            location.reload();
+
+            // ✅ Update modal content instantly
+            document.querySelector('#modal-' + id + ' .modal-name').innerHTML = data.name;
+            document.querySelector('#modal-' + id + ' .modal-subject').innerHTML = "📌 " + data.subject;
+            document.querySelector('#modal-' + id + ' .modal-text').innerHTML = data.message;
+
+            // ✅ Show success message
+            const msgBox = document.getElementById('update-msg-' + id);
+            msgBox.innerHTML = "✅ Changes successfully updated!";
+            msgBox.style.display = "block";
+
+            // Hide edit area
+            const editArea = document.getElementById('edit-area-' + id);
+				editArea.style.opacity = "0.5";
+
+				setTimeout(() => {
+					cancelEdit(id);
+					editArea.style.opacity = "1";
+				}, 300);
+
+            // Re-run syntax highlight if needed
+            document.querySelectorAll('#modal-' + id + ' pre code').forEach(el => {
+                hljs.highlightElement(el);
+            });
+
+// ✅ Update background list instantly
+const listItem = document.getElementById('message-item-' + id);
+
+if (listItem) {
+    listItem.querySelector('.message-name').innerHTML = data.name;
+    listItem.querySelector('.message-subject').innerHTML = "📌 " + data.subject;
+
+    // For preview list, show plain text (not full renderMessage formatting)
+    listItem.querySelector('.message-text').innerText =
+        document.getElementById('edit-message-' + id).value;
+}
+
         } else {
             alert('Update failed.');
         }
