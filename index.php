@@ -1083,7 +1083,7 @@ if (listItem) {
 </body>
 <script>
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/blog/sw.js')
+    navigator.serviceWorker.register('/sw.js')
         .then(() => console.log('SW Registered'));
 }
 
