@@ -172,6 +172,9 @@ function renderMessage($text)
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Message Logger</title>
+	
+	<link rel="manifest" href="manifest.json">
+	<meta name="theme-color" content="#121212">
     <style>
         * {
     margin: 0;
@@ -480,6 +483,9 @@ textarea {
             display: -webkit-box;
             -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
+           font-family: 'Gentium Plus';
+           letter-spacing: 0.3px;
+    word-spacing: 2.5px;
         }
         
         /* Modal/Theatre Mode */
@@ -595,7 +601,10 @@ textarea {
             line-height: 1.8;
             white-space: pre-wrap;
             font-size: 1.05em;
-			padding:10px 0;
+	padding:10px 0;
+ font-family: 'Gentium Plus';
+           letter-spacing: 0.3px;
+    word-spacing: 2.5px;
         }
         
         .empty-state {
@@ -1078,4 +1087,10 @@ if (listItem) {
 
 
 </body>
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+        .then(() => console.log('SW Registered'));
+}
+</script>
 </html>
