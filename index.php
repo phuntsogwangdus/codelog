@@ -1,5 +1,5 @@
 <?php
-//PWA
+
 // Created by Phuntsog Wangdus
 // https://wangdus.com/
 
